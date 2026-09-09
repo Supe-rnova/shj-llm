@@ -1,0 +1,4 @@
+Prefill required. Both models produced preamble without it; flash-lite refused to guess on trial 1. Prefill gives one token, STOP, clean parse. Matches Jagadish's Assistant: Category.
+Thinking disabled. 3.6-flash spent 292 thinking tokens on a one-token answer and rejects thinking_budget=0. 3.5-flash and 3.1-flash-lite accept it. Claude-v2 had no thinking mode, so 0 preserves comparability.
+2.5-flash unavailable to new API keys as of today. Model availability is provider-controlled — a §6.3 limitation.
+Spontaneous paradigm recognition. Paste the 3.5-flash response verbatim. On trial 1, no history, it named this a classic category-learning experiment from cognitive psychology and referenced rule-plus-exception and prototype models. The mineral abstraction did not prevent recognition.
