@@ -69,6 +69,7 @@ def main():
     else:
         raise SystemExit("mode must be 'smoke' or 'pilot'")
 
+
     dropped = drop_partial_runs(out)
     if dropped:
         print(f"Removed {dropped} rows from an incomplete run.")
