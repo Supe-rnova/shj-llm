@@ -14,6 +14,7 @@ reproducible and re-running appends without colliding.
 import sys
 from datetime import date
 from pathlib import Path
+import pandas as pd
 
 from gemini_responder import make_gemini_responder
 from runner import run_one
@@ -27,6 +28,28 @@ RUNS_PER_TYPE = 10
 def seed_for(shj_type, run_number):
     """Fixed, documented, collision-free."""
     return 1000 * shj_type + run_number
+
+def drop_partial_runs(out_path):
+    """Delete rows from runs that didn't reach 64 trials."""
+    if not out_path.exists():
+        return 0
+    df = pd.read_csv(out_path)
+    sizes = df.groupby("run_id").size()
+    complete = sizes[sizes == 64].index
+    kept = df[df.run_id.isin(complete)]
+    dropped = len(df) - len(kept)
+    if dropped:
+        kept.to_csv(out_path, index=False)
+    return dropped
+
+
+def completed_seeds(out_path):
+    """Seeds that already have a full 64-trial run in this file."""
+    if not out_path.exists():
+        return set()
+    df = pd.read_csv(out_path)
+    sizes = df.groupby(["seed", "run_id"]).size()
+    return {seed for (seed, _), n in sizes.items() if n == 64}
 
 
 def main():
@@ -45,6 +68,20 @@ def main():
         out = Path(f"data/pilot/pilot_{short}_{date.today()}.csv")
     else:
         raise SystemExit("mode must be 'smoke' or 'pilot'")
+
+    dropped = drop_partial_runs(out)
+    if dropped:
+        print(f"Removed {dropped} rows from an incomplete run.")
+
+    done = completed_seeds(out)
+    jobs = [(t, n) for (t, n) in jobs if seed_for(t, n) not in done]
+    if done:
+        print(f"Resuming: {len(done)} run(s) already complete, skipping those.")
+
+    if not jobs:
+        print("Nothing left to run.")
+        return
+
 
     print(f"{len(jobs)} run(s), {len(jobs) * 64} requests -> {out}")
     print(f"estimated wall clock: {len(jobs) * 64 * 6 / 60:.0f} minutes\n")
