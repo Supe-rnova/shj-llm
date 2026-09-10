@@ -65,7 +65,7 @@ def main():
         out = Path(f"data/pilot/smoke_{short}_{date.today()}.csv")
     elif mode == "pilot":
         jobs = [(t, n) for t in (1, 6) for n in range(1, RUNS_PER_TYPE + 1)]
-        out = Path(f"data/pilot/pilot_{short}_{date.today()}.csv")
+        out = Path(f"data/pilot/pilot_{short}.csv")
     else:
         raise SystemExit("mode must be 'smoke' or 'pilot'")
 
