@@ -123,3 +123,97 @@ is complete.
 2. Re-answer Gate 1 on 10 runs per type.
 3. Run contamination probes A, B, C.
 4. Decide the response to Q3/Q4 failure.
+
+
+
+-------------------------------------------------------------
+
+
+---
+
+# COMPLETE — 11 September 2026
+
+20 runs (10 per type), 1,280 trials, **0 parse failures**.
+
+## Accuracy by block
+
+| Block | Type I | Type VI |
+|---|---|---|
+| 1 | 0.712 | 0.400 |
+| 2-8 | 1.000 | 1.000 |
+
+Zero errors in 1,120 trials after block 1.
+
+Between-run SD: Type I 0.0148, Type VI 0.0192.
+
+## Block 1, trial by trial
+
+| Trial | Type I | Type VI |
+|---|---|---|
+| 1 | 0.3 | 0.8 |
+| 2 | 0.7 | 0.4 |
+| 3 | 0.3 | 0.3 |
+| 4 | 0.6 | 0.4 |
+| 5 | 0.9 | 0.3 |
+| 6 | 0.9 | 0.4 |
+| 7 | 1.0 | 0.2 |
+| 8 | 1.0 | 0.4 |
+
+Type I rises to perfect by trial 7. Type VI stays flat at ~0.34 across
+trials 2-8 and never improves.
+
+**Type VI trials 2-8: 24/70 correct, ~2.6 SD below chance (p ~ .009).**
+Not floor from guessing — reliably wrong.
+
+### Trial 1 is not interpretable
+
+Both types produced an identical 6 Alpha / 4 Beta response split on
+trial 1. True labels fell 5/5 (Type I) and 4/6 (Type VI) by
+randomisation. Given those marginals, 0.8 was the maximum attainable
+for Type VI. The apparent trial-1 difference is an artefact.
+
+### Response bias
+
+Block 1 overall: 91/160 Alpha (43/80 Type I, 48/80 Type VI), ~1.7 SD
+above even. Mild Alpha preference on uninformed trials. This is the
+quantity a guessing parameter captures — the single parameter Jagadish
+et al. fitted to Claude-v2.
+
+## Interpretation
+
+Below-chance Type VI performance alongside above-chance Type I is the
+behavioural signature of **similarity-based generalisation**.
+
+Under parity, every item differing from a seen exemplar on one
+dimension carries the opposite label — all three nearest neighbours are
+in the other category. A learner generalising by similarity is
+therefore systematically wrong on Type VI, not merely at chance. Type I
+is the reverse: two of three nearest neighbours share the label, and
+accuracy climbs across block 1 accordingly.
+
+This is an exemplar-model prediction, readable directly from the raw
+data.
+
+## Consequence for Stage 5
+
+Graded choice behaviour exists in block 1 only. Blocks 2-8 are
+deterministic and contain nothing to fit. Model fitting, if attempted,
+would operate on 160 trials per type rather than 640.
+
+## Final Gate 1 answers
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Does it learn? | **PASS** |
+| 2 | Is VI harder than I? | **PASS** — block 1, .400 vs .712 |
+| 3 | Room to see learning? | **FAIL** — ceiling at block 2 |
+| 4 | Do runs vary? | **FAIL** — SD .0148 / .0192 |
+| 5 | Contamination controlled? | **PENDING** — probes A/B/C not yet run |
+
+## Next
+
+1. Contamination probes A, B, C.
+2. Decide response to Q3/Q4 failure. Note that section 2.5 remedy (a)
+   targets verbalizability, which affects induction speed; induction is
+   complete by trial 8 here. The binding constraint appears to be
+   context retrieval from blocks 2-8, which (a) does not address.
