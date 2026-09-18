@@ -217,3 +217,67 @@ would operate on 160 trials per type rather than 640.
    targets verbalizability, which affects induction speed; induction is
    complete by trial 8 here. The binding constraint appears to be
    context retrieval from blocks 2-8, which (a) does not address.
+
+   ---
+
+# Probe results — 15 September 2026
+
+Full transcripts: `notes/probe_results_gemini-3.1-flash-lite_2026-09-15.md`
+
+| Probe | Result |
+|---|---|
+| A, Type I | CLEAN. Correct rule (banding), no paradigm reference |
+| A, Type VI | CLEAN. Correct parity rule stated; "parity"/"XOR" used as
+descriptions of the structure, not literature references |
+| B, Type I | RECOGNISED as concept learning; SHJ not named |
+| B, Type II | **NAMED Shepard, Hovland & Jenkins (1961), identified as Type II** |
+| B, Type VI | **NAMED SHJ (1961); hedged between Type II and Type VI** |
+| C | INFORMED. Correct ordering I < II < (III,IV,V) < VI |
+
+## Key observations
+
+**1. Recognition is structural, not surface-level.** Probe B used bare
+3-bit strings with A/B labels — no cover story, no feature names. SHJ was
+named anyway. The minerals abstraction (section 1.2) provides no
+protection against paradigm recognition, because the recognisable object
+is the category structure itself.
+
+**2. Declarative knowledge is partly incorrect.** Probe C describes Type
+II as "rule with exceptions" (it is XOR). Probe B Type I calls Type VI
+"family resemblance" (that is Type IV). The ordering and attribution are
+correct; the content of individual types is not. The model does not hold
+a reliable lookup of the six structures.
+
+**3. Knowledge was not deployed during runs.** Probe C states Type VI is
+hardest and requires all three dimensions. If deployed, block 1 should
+show broad attention. Instead Type VI block 1 is reliably BELOW chance
+(24/70, p ~ .009) — the signature of similarity-based generalisation,
+i.e. of a learner not using that knowledge.
+
+**4. The model verbalised the parity rule.** After Type VI it assigned
+0/1 to each feature, summed, and stated odd -> Alpha / even -> Beta, with
+five worked trial verifications. Humans do not verbalise Type VI; Kurtz
+(2013) argues verbalizability is what drives the Type II advantage. This
+model verbalised the hardest structure within eight trials. Relevant to
+the section 3.1 instruction-factor decision.
+
+## Gate 1 Q5
+
+**FAIL as specified** — pass condition required probes A and B clean; B
+was not.
+
+The substantive position is more informative than a bare fail: the
+knowledge exists, the structure is recognised on demand, and behaviour
+during runs is inconsistent with deployment. Section 2.2 identifies this
+contrast as the strongest available contamination claim; the intended
+version had B clean, but the behavioural evidence carries the argument.
+
+## Implication for the section 2.5(a) remedy
+
+Remedy (a) changes surface features. Probe B shows recognition is driven
+by structure, so (a) cannot prevent it. Separately, (a) targets
+verbalizability, and this model verbalised parity from eight examples.
+Both of (a)'s mechanisms of action appear inapplicable.
+
+(a) may still be worth running as a test of the block-1 similarity
+hypothesis rather than as a ceiling remedy.
