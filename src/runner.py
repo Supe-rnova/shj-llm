@@ -39,7 +39,11 @@ FIELDNAMES = [
     "item_text", "category_true",
     "response_raw", "response_parsed", "parse_ok", "correct",
     "prompt_tokens", "completion_tokens", "latency_ms",
+    "attempts", "rejected_raw",
 ]
+# attempts / rejected_raw: how many times the question was asked, and the
+# verbatim replies that were rejected as unreadable (qwen_responder.py).
+# Responders that never retry (Gemini, fakes) log attempts=1.
 
 
 def run_one(responder, shj_type, seed, out_path,
@@ -49,7 +53,9 @@ def run_one(responder, shj_type, seed, out_path,
     """Run one complete SHJ problem: 8 blocks x 8 items = 64 trials.
 
     responder: a function taking a prompt string and returning
-               (raw_text, prompt_tokens, completion_tokens).
+               (raw_text, prompt_tokens, completion_tokens), optionally
+               with a fourth element: a dict of extra log columns
+               (attempts, rejected_raw).
     Returns the run_id.
     """
     run_id = str(uuid.uuid4())
@@ -65,8 +71,18 @@ def run_one(responder, shj_type, seed, out_path,
     history = []
     trial_index = 0
 
+    # Appending to a file written before the attempts / rejected_raw
+    # columns existed: keep that file's own header so columns stay aligned.
+    fieldnames = FIELDNAMES
+    if not new_file:
+        with open(out_path, newline="", encoding="utf-8") as existing:
+            header = next(csv.reader(existing), None)
+        if header:
+            fieldnames = header
+
     with open(out_path, "a", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=FIELDNAMES)
+        writer = csv.DictWriter(fh, fieldnames=fieldnames,
+                                extrasaction="ignore")
         if new_file:
             writer.writeheader()
 
@@ -81,8 +97,11 @@ def run_one(responder, shj_type, seed, out_path,
                 prompt = build_prompt(stimulus, instruction_style, history, item)
 
                 t0 = time.perf_counter()
-                raw, p_tok, c_tok = responder(prompt)
+                result = responder(prompt)
                 latency_ms = int((time.perf_counter() - t0) * 1000)
+                raw, p_tok, c_tok = result[:3]
+                extra = (result[3] if len(result) > 3
+                         else {"attempts": 1, "rejected_raw": ""})
 
                 parsed, parse_ok = parse_response(raw, stimulus)
                 correct = (parsed == true_group) if parse_ok else None
@@ -111,6 +130,7 @@ def run_one(responder, shj_type, seed, out_path,
                     "latency_ms": latency_ms,
                 }
                 row.update(surface_fields)
+                row.update(extra)
 
                 writer.writerow(row)
                 fh.flush()

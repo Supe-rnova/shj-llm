@@ -7,6 +7,9 @@ Smoke test and pilot runner.
     python src/run_pilot.py pilot <model>
 
 Smoke: one Type I run. Pilot: Types I and VI, 10 runs each.
+
+Model names starting with "qwen/" use the Groq responder
+(qwen_responder.py); everything else uses Gemini.
 Seeds are fixed and derived from type and run number, so any run is
 reproducible and re-running appends without colliding.
 """
@@ -17,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 
 from gemini_responder import make_gemini_responder
+from qwen_responder import make_qwen_responder
 from runner import run_one
 
 TEMPERATURE = 1.0
@@ -57,8 +61,14 @@ def main():
     model_name = sys.argv[2]
     short = model_name.split("/")[-1]
 
-    responder = make_gemini_responder(
-        model_name, temperature=TEMPERATURE, verbose=True)
+    if model_name.startswith("qwen/"):
+        responder = make_qwen_responder(
+            model_name, temperature=TEMPERATURE, verbose=True)
+        provider, seconds_per_call = "groq", 2.5
+    else:
+        responder = make_gemini_responder(
+            model_name, temperature=TEMPERATURE, verbose=True)
+        provider, seconds_per_call = "google", 6
 
     if mode == "smoke":
         jobs = [(1, 0)]
@@ -85,14 +95,15 @@ def main():
 
 
     print(f"{len(jobs)} run(s), {len(jobs) * 64} requests -> {out}")
-    print(f"estimated wall clock: {len(jobs) * 64 * 6 / 60:.0f} minutes\n")
+    print(f"estimated wall clock: "
+          f"{len(jobs) * 64 * seconds_per_call / 60:.0f} minutes\n")
 
     for i, (shj_type, run_number) in enumerate(jobs, start=1):
         seed = seed_for(shj_type, run_number)
         print(f"[{i}/{len(jobs)}] Type {shj_type}, run {run_number}, seed {seed}")
         run_one(
             responder, shj_type=shj_type, seed=seed, out_path=out,
-            model=short, provider="google",
+            model=short, provider=provider,
             temperature=TEMPERATURE,
             instruction_style=INSTRUCTION_STYLE,
             surface_scheme=SURFACE_SCHEME,
