@@ -40,7 +40,11 @@ FIELDNAMES = [
     "response_raw", "response_parsed", "parse_ok", "correct",
     "prompt_tokens", "completion_tokens", "latency_ms",
     "attempts", "rejected_raw",
+    "run_kind", "run_number",
 ]
+# run_kind / run_number: which kind of run this row belongs to ("full" =
+# the 8-block pilot design; "short" = 1 block; "ceiling" = 3 blocks) and
+# its number within its type. Set by main_study.py.
 # attempts / rejected_raw: how many times the question was asked, and the
 # verbatim replies that were rejected as unreadable (qwen_responder.py).
 # Responders that never retry (Gemini, fakes) log attempts=1.
@@ -49,8 +53,13 @@ FIELDNAMES = [
 def run_one(responder, shj_type, seed, out_path,
             model="fake", provider="fake", temperature=1.0,
             instruction_style="neutral", surface_scheme="minerals",
-            verbose=False):
-    """Run one complete SHJ problem: 8 blocks x 8 items = 64 trials.
+            verbose=False, n_blocks=BLOCKS, run_kind="full",
+            run_number=None):
+    """Run one SHJ problem: n_blocks x 8 items (default 8 x 8 = 64 trials).
+
+    n_blocks < 8 stops the run early. Block 1 is identical whatever
+    n_blocks is: the same seed gives the same mapping and the same
+    block-1 order, because later blocks are drawn only after it.
 
     responder: a function taking a prompt string and returning
                (raw_text, prompt_tokens, completion_tokens), optionally
@@ -86,7 +95,7 @@ def run_one(responder, shj_type, seed, out_path,
         if new_file:
             writer.writeheader()
 
-        for block in range(1, BLOCKS + 1):
+        for block in range(1, n_blocks + 1):
             for trial_in_block, item in enumerate(block_order(rng, ITEMS), start=1):
                 trial_index += 1
 
@@ -131,6 +140,8 @@ def run_one(responder, shj_type, seed, out_path,
                 }
                 row.update(surface_fields)
                 row.update(extra)
+                row["run_kind"] = run_kind
+                row["run_number"] = run_number
 
                 writer.writerow(row)
                 fh.flush()

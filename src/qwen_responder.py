@@ -56,6 +56,11 @@ URL = "https://api.groq.com/openai/v1/chat/completions"
 MIN_SECONDS_BETWEEN_CALLS = 2.5   # stays under 30 requests per minute
 MAX_RETRIES = 5                   # for network / rate-limit errors
 MAX_ATTEMPTS = 3                  # for unreadable replies
+MAX_WAIT_SECONDS = 120            # longer = daily limit; stop instead
+
+
+class DailyLimitReached(RuntimeError):
+    """Raised when Groq's daily request or token limit is used up."""
 TRAILING_LINE = "Group"
 FORMAT_INSTRUCTION = ("Reply with only the name of the group and nothing "
                       "else. Do not explain.")
@@ -120,6 +125,11 @@ def make_qwen_responder(model_name="qwen/qwen3.8-27b", temperature=1.0,
                 wait = float(retry_after) + random.random()
             except (TypeError, ValueError):
                 wait = (2 ** attempt) + random.random()
+            if resp.status_code == 429 and wait > MAX_WAIT_SECONDS:
+                # A long wait means the DAILY limit, not the per-minute one.
+                raise DailyLimitReached(
+                    f"Groq asked to wait {wait / 60:.0f} minutes: daily "
+                    f"limit reached. {last_error}")
             if verbose:
                 print(f"    got {resp.status_code}, waiting {wait:.1f}s")
             time.sleep(wait)
