@@ -76,6 +76,11 @@ def load(path):
     return d
 
 
+def drop_trial1(d):
+    """Remove trial 1 of block 1 (a pure guess); keep everything else."""
+    return d[~((d.block == 1) & (d.trial_in_block == 1))]
+
+
 def ci95(x):
     """Mean and t-based 95% confidence half-width over runs."""
     x = np.asarray(x, dtype=float)
@@ -176,29 +181,48 @@ def main():
 
     # ---------------------------------------------------- 1. the ceiling
     lines += ["## 1. The ceiling (open-book)", "",
-              "| Data | Block 1 accuracy | Accuracy after block 1 |",
-              "|---|---|---|"]
-    for t in (1, 6):
-        p = pilot[pilot.shj_type == t]
-        lines.append(f"| Pilot Gemini, Type {ROMAN[t]} (10 runs x 8 blocks) | "
-                     f"{p[p.block == 1].correct.mean():.3f} | "
-                     f"{p[p.block > 1].correct.mean():.3f} "
-                     f"({int(p[p.block > 1].correct.sum())}/"
-                     f"{int(p[p.block > 1].correct.count())}) |")
+              "Block 1 = trials 2-8, as in every other section (trial 1 is a "
+              "pure guess). Both columns are pooled proportions: correct / "
+              "readable answers. The last column is the error rate after "
+              "block 1 with a one-sided 95% upper bound (exact binomial; with "
+              "0 errors in n trials this is about 3/n, the 'rule of three').",
+              "",
+              "| Data | Block 1 accuracy | Accuracy after block 1 | "
+              "Error rate after block 1 (95% upper bound) |",
+              "|---|---|---|---|"]
+
+    def ceiling_row(label, rows):
+        b1 = rows[(rows.block == 1) & (rows.trial_in_block >= 2)].correct
+        after = rows[rows.block > 1].correct
+        return (label, int(b1.sum()), int(b1.count()),
+                int(after.sum()), int(after.count()))
+
+    ceiling_rows = [ceiling_row(f"Pilot Gemini, Type {ROMAN[t]} (10 runs x 8 blocks)",
+                                pilot[pilot.shj_type == t]) for t in (1, 6)]
     for m, d in data.items():
         c = d[d.run_kind == "ceiling"]
-        after = c[c.block > 1].correct
-        lines.append(f"| Main {m}, ceiling runs (types "
-                     f"{', '.join(ROMAN[t] for t in sorted(c.shj_type.unique()))}) | "
-                     f"{c[c.block == 1].correct.mean():.3f} | "
-                     f"{after.mean():.3f} ({int(after.sum())}/{int(after.count())}) |")
+        ceiling_rows.append(ceiling_row(
+            f"Main {m}, ceiling runs (types "
+            f"{', '.join(ROMAN[t] for t in sorted(c.shj_type.unique()))})", c))
+    gemini_all = [r for r in ceiling_rows if "Qwen" not in r[0]]
+    ceiling_rows.append(("All Gemini data combined", sum(r[1] for r in gemini_all),
+                         sum(r[2] for r in gemini_all), sum(r[3] for r in gemini_all),
+                         sum(r[4] for r in gemini_all)))
+    for label, b1_ok, b1_n, ok, n in ceiling_rows:
+        errors = n - ok
+        upper = stats.binomtest(errors, n).proportion_ci(
+            confidence_level=0.90, method="exact").high   # one-sided 95%
+        lines.append(f"| {label} | {b1_ok / b1_n:.3f} ({b1_ok}/{b1_n}) | "
+                     f"{ok / n:.3f} ({ok}/{n}) | {errors / n:.2%} "
+                     f"(< {upper:.2%}) |")
     lines.append("")
 
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.7),
                              gridspec_kw={"width_ratios": [1.6, 1]})
     ax = axes[0]
     for t, ls in ((1, "-"), (6, "--")):
-        runs = pilot[pilot.shj_type == t].groupby(["run_id", "block"]).correct.mean()
+        p = drop_trial1(pilot[pilot.shj_type == t])
+        runs = p.groupby(["run_id", "block"]).correct.mean()
         by_block = runs.groupby(level="block")
         mean = by_block.mean()
         half = by_block.apply(lambda x: ci95(x)[1])
@@ -213,7 +237,7 @@ def main():
     ax = axes[1]
     for i, (m, d) in enumerate(data.items()):
         c = d[d.run_kind == "ceiling"]
-        runs = c.groupby(["run_id", "block"]).correct.mean()
+        runs = drop_trial1(c).groupby(["run_id", "block"]).correct.mean()
         by_block = runs.groupby(level="block")
         mean = by_block.mean()
         half = by_block.apply(lambda x: ci95(x)[1])
